@@ -1,7 +1,7 @@
 #+OPTIONS: num:nil toc:nil author:nil tags:nil todo:nil \n:nil ignore-headlines-below:0
 #+SELECT_TAGS: export
 
-#+BIND: org-export-filter-parse-tree-functions (org-export-ignore-headlines-below)
+#+BIND: org-export-filter-parse-tree-functions (org-writer-ignore-headlines-below)
 
 # html settings (expecting \n:nil)
 #+HTML_HEAD: <style>p { text-indent: 48px; margin-top: 0px; margin-bottom: 0px; } </style>
