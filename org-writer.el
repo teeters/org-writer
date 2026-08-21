@@ -37,6 +37,8 @@ parent."
 					   `(latex-fragment (:value "\\bigskip" :begin ,b :end ,e :post-blank ,pb)))
                       ((org-export-derived-backend-p backend 'odt)
                        "")
+		      ((org-export-derived-backend-p backend 'html)
+		       " ")
                       (t
                        `(line-break (:begin ,b :end ,e :post-blank 0)))))
 	
