@@ -1,3 +1,11 @@
+;;; org-writer.el --- Utilities for using org-mode as a word processor, esp. for prose & novels
+;;; Code:
+
+(defgroup org-writer nil
+  "Utility functions for writing prose with org-mode"
+  :prefix "org-writer-"
+  :group 'org)
+
 (defcustom org-writer-ignore-headlines-max-level 2 "Max level of headlines to keep when exporting prose.")
 
 ;; usage: use #+BIND: org-export-filter-parse-tree-functions (org-writer-ignore-headlines-below)
@@ -105,7 +113,7 @@ parent."
      (unless (file-exists-p style-file)
        (let ((prompt (format "Style file %s not found; create it?" style-file)))
 	 (when (y-or-n-p prompt)
-	   (org-writer-copy-style-file project-dir)))
+	   (org-writer-copy-style-file project-dir))))
      (list f)))
   
   (find-file file)
@@ -117,3 +125,5 @@ parent."
     (save-excursion
       (beginning-of-buffer)
       (insert header-string))))
+
+(provide 'org-writer)
