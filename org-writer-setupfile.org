@@ -1,6 +1,5 @@
 #+OPTIONS: num:nil toc:nil author:nil tags:nil todo:nil \n:nil ignore-headlines-below:0
 #+SELECT_TAGS: export
-#+ODT_STYLES_FILE: "org-writer-style.ott"
 
 #+BIND: org-export-filter-parse-tree-functions (org-writer-ignore-headlines-below)
 

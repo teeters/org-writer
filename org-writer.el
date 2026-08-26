@@ -62,7 +62,17 @@ parent."
 
 (defconst org-writer-package-dir (file-name-directory load-file-name))
 (defconst org-writer-setupfile-name "org-writer-setupfile.org")
-(defconst org-writer-style-dest-file-name "org-writer-style.ott")
+
+(defconst org-writer-style-files
+  '(("novel" . "org-writer-style-novel.ott")
+    ("novel-chapter" . "org-writer-style-novel-chapter.ott")))
+  ;; eventually add short story, essay
+			       
+(defun org-writer-choose-style-file ()
+  (interactive)
+  (minibuffer-with-setup-hook 'minibuffer-completion-help
+    (let ((choice (completing-read "Choose a style template:" org-writer-style-files nil t)))
+      (alist-get choice org-writer-style-files nil nil #'equal))))
 
 (defun org-writer-current-dir-setupfile-path ()
   (file-name-concat default-directory org-writer-setupfile-name))
@@ -71,30 +81,27 @@ parent."
   "Copy default setupfile to project-dir/org-writer-setupfile.org if not exists; else do nothing"
   (let ((setup-file-source (file-name-concat org-writer-package-dir "org-writer-setupfile.org"))
 	(setup-file-dest (file-name-concat dest-dir org-writer-setupfile-name)))
-    (message "Copying setupfile from %s to %s" setup-file-source setup-file-dest)
     (unless (file-exists-p setup-file-dest)
       (copy-file setup-file-source setup-file-dest))))
 
-(defun org-writer-copy-style-file (dest-dir)
-  "Copy default style file to project-dir/org-writer-style-dest-file-name if not exists; else do nothing"
-  (let ((style-file-source (file-name-concat org-writer-package-dir "org-writer-style-novel.ott"))
-	(style-file-dest (file-name-concat dest-dir org-writer-style-dest-file-name)))
+(defun org-writer-copy-style-file (style-file-name dest-dir)
+  "Copy default style file to project-dir/style-file-name if not exists; else do nothing"
+  (let ((style-file-source (file-name-concat org-writer-package-dir style-file-name))
+	(style-file-dest (file-name-concat dest-dir style-file-name)))
     (message "Copying style file from %s to %s" style-file-source style-file-dest)
     (unless (file-exists-p style-file-dest)
       (copy-file style-file-source style-file-dest))))
   
 (defun org-writer-initialize-project (project-dir)
-  "Initialize new writing project in PROJECT-DIR; create setupfile and odt style template"
-  ;; TODO: add support for multiple style files for, e.g., novels vs short stories
+  "Initialize new writing project in PROJECT-DIR; create setupfile"
   (interactive
    (let ((d (read-directory-name "Project directory:")))
      (list d)))
   (unless (file-exists-p project-dir)
     (make-directory project-dir nil))
-  (org-writer-copy-setupfile project-dir)
-  (org-writer-copy-style-file project-dir))
+  (org-writer-copy-setupfile project-dir))
 
-(defun org-writer-initialize-file (file)
+(defun org-writer-initialize-file (file style-file)
   "Setup currently open file for writing export; write SETUPFILE setting to beginning"
   ;; todo: check for currently existing setupfile header, handle gracefully
   (interactive
@@ -103,7 +110,8 @@ parent."
 	  (f (read-file-name "File path:" buffer-file buffer-file))
 	  (project-dir (file-name-directory f))
 	  (setupfile (file-name-concat project-dir org-writer-setupfile-name))
-	  (style-file (file-name-concat project-dir org-writer-style-dest-file-name)))
+	  (style-file-name (org-writer-choose-style-file))
+	  (style-file (file-name-concat project-dir style-file-name)))
      ;; check if setupfile exists, offer to create
      (unless (file-exists-p setupfile)
        (let ((prompt (format "Setup file %s not found; create it?" setupfile)))
@@ -113,14 +121,14 @@ parent."
      (unless (file-exists-p style-file)
        (let ((prompt (format "Style file %s not found; create it?" style-file)))
 	 (when (y-or-n-p prompt)
-	   (org-writer-copy-style-file project-dir))))
-     (list f)))
+	   (org-writer-copy-style-file style-file-name project-dir))))
+     (list f style-file-name)))
   
   (find-file file)
   ;; assumption: we are now in a buffer editing the file, which may or may not be new
   (let* ((project-dir (file-name-directory file))
 	(setupfile (file-name-concat project-dir org-writer-setupfile-name))
-	(header-string (format "#+SETUPFILE: %s\n" setupfile)))
+	(header-string (format "#+SETUPFILE: %s\n#+ODT_STYLES_FILE: %s\n" setupfile style-file)))
     ;; possible issue: other behaviors triggered by opening new file?
     (save-excursion
       (beginning-of-buffer)
