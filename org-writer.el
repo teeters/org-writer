@@ -6,7 +6,9 @@
   :prefix "org-writer-"
   :group 'org)
 
-(defcustom org-writer-ignore-headlines-max-level 2 "Max level of headlines to keep when exporting prose.")
+(setq org-export-allow-bind-keywords t) ;;TODO: prompt the user about this 
+
+(defcustom org-writer-ignore-headlines-max-level 2 "Max level of headlines to keep when exporting prose. Headlines at a greater depth will be treated as scene headers and replaced with a blank line in export")
 
 ;; usage: use #+BIND: org-export-filter-parse-tree-functions (org-writer-ignore-headlines-below)
 ;; and set org-writer-ignore-headlines-max-level
@@ -63,16 +65,30 @@ parent."
 (defconst org-writer-package-dir (file-name-directory load-file-name))
 (defconst org-writer-setupfile-name "org-writer-setupfile.org")
 
-(defconst org-writer-style-files
-  '(("novel" . "org-writer-style-novel.ott")
-    ("novel-chapter" . "org-writer-style-novel-chapter.ott")))
-  ;; eventually add short story, essay
+(defconst org-writer-styles
+  '((:novel "org-writer-style-novel.ott" 2)
+    (:novel-chapter "org-writer-style-novel-chapter.ott" 1)))
+;; eventually add short story, essay
+
+(defun org-writer-get-style (style-name)
+  (assoc style-name org-writer-styles))
+
+(defun org-writer-style-name (style)
+  (car style))
+
+(defun org-writer-style-filename (style)
+  (car (cdr style)))
+
+(defun org-writer-style-destination-path (style project-dir)
+  (file-name-concat project-dir (org-writer-style-filename style)))
+
+(defun org-writer-style-ignore-headlines-max-level (style)
+  (caddr style))
 			       
-(defun org-writer-choose-style-file ()
+(defun org-writer-choose-style-name ()
   (interactive)
   (minibuffer-with-setup-hook 'minibuffer-completion-help
-    (let ((choice (completing-read "Choose a style template:" org-writer-style-files nil t)))
-      (alist-get choice org-writer-style-files nil nil #'equal))))
+    (intern (concat ":" (completing-read "Choose a style template:" org-writer-style-files nil t)))))
 
 (defun org-writer-current-dir-setupfile-path ()
   (file-name-concat default-directory org-writer-setupfile-name))
@@ -101,7 +117,7 @@ parent."
     (make-directory project-dir nil))
   (org-writer-copy-setupfile project-dir))
 
-(defun org-writer-initialize-file (file style-file)
+(defun org-writer-initialize-file (file style-name)
   "Setup currently open file for writing export; write SETUPFILE setting to beginning"
   ;; todo: check for currently existing setupfile header, handle gracefully
   (interactive
@@ -110,25 +126,30 @@ parent."
 	  (f (read-file-name "File path:" buffer-file buffer-file))
 	  (project-dir (file-name-directory f))
 	  (setupfile (file-name-concat project-dir org-writer-setupfile-name))
-	  (style-file-name (org-writer-choose-style-file))
-	  (style-file (file-name-concat project-dir style-file-name)))
+	  (style-name (org-writer-choose-style-name))
+	  (style (org-writer-get-style style-name))
+	  (style-file-name (org-writer-style-filename style))
+	  (style-dest-path (org-writer-style-destination-path style project-dir)))
      ;; check if setupfile exists, offer to create
      (unless (file-exists-p setupfile)
        (let ((prompt (format "Setup file %s not found; create it?" setupfile)))
 	 (when (y-or-n-p prompt)
 	   (org-writer-copy-setupfile project-dir))))
      ;; check if style file exists, offer to create
-     (unless (file-exists-p style-file)
-       (let ((prompt (format "Style file %s not found; create it?" style-file)))
+     (unless (file-exists-p style-dest-path)
+       (let ((prompt (format "Style file %s not found; create it?" style-dest-path)))
 	 (when (y-or-n-p prompt)
 	   (org-writer-copy-style-file style-file-name project-dir))))
-     (list f style-file-name)))
+     (list f style-name)))
   
   (find-file file)
   ;; assumption: we are now in a buffer editing the file, which may or may not be new
   (let* ((project-dir (file-name-directory file))
-	(setupfile (file-name-concat project-dir org-writer-setupfile-name))
-	(header-string (format "#+SETUPFILE: %s\n#+ODT_STYLES_FILE: %s\n" setupfile style-file)))
+	 (setupfile (file-name-concat project-dir org-writer-setupfile-name))
+	 (style (org-writer-get-style style-name))
+	 (style-dest-path (org-writer-style-destination-path style project-dir))
+	 (h (org-writer-style-ignore-headlines-max-level style))
+	 (header-string (format "#+SETUPFILE: %s\n#+ODT_STYLES_FILE: %s\n#+BIND: org-writer-ignore-headlines-max-level %d\n" setupfile style-dest-path h)))
     ;; possible issue: other behaviors triggered by opening new file?
     (save-excursion
       (beginning-of-buffer)
