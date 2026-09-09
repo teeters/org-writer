@@ -8,10 +8,10 @@
 
 (setq org-export-allow-bind-keywords t) ;;TODO: prompt the user about this 
 
-(defcustom org-writer-ignore-headlines-max-level 2 "Max level of headlines to keep when exporting prose. Headlines at a greater depth will be treated as scene headers and replaced with a blank line in export")
+(defcustom org-writer-headline-cutoff 2 "Max level of headlines to keep when exporting prose. Headlines at a greater depth will be treated as scene headers and replaced with a blank line in export")
 
 ;; usage: use #+BIND: org-export-filter-parse-tree-functions (org-writer-ignore-headlines-below)
-;; and set org-writer-ignore-headlines-max-level
+;; and set org-writer-headline-cutoff
 
 (defun org-writer-ignore-headlines-below (data backend info)
   "Remove below a certain level retaining contents.
@@ -19,7 +19,7 @@ Each headline will be removed retaining its
 contents and promoting them to the level of the
 parent."
   (message "data: %s" data)
-  (let ((max-level org-writer-ignore-headlines-max-level))
+  (let ((max-level org-writer-headline-cutoff))
 	(when max-level
       (org-element-map data 'headline
 		(lambda (object)
@@ -66,8 +66,8 @@ parent."
 (defconst org-writer-setupfile-name "org-writer-setupfile.org")
 
 (defconst org-writer-styles
-  '((:novel "org-writer-style-novel.ott" 2)
-    (:novel-chapter "org-writer-style-novel-chapter.ott" 1)))
+  '(("novel" "org-writer-style-novel.ott" 2)
+    ("novel-chapter" "org-writer-style-novel-chapter.ott" 1)))
 ;; eventually add short story, essay
 
 (defun org-writer-get-style (style-name)
@@ -88,7 +88,7 @@ parent."
 (defun org-writer-choose-style-name ()
   (interactive)
   (minibuffer-with-setup-hook 'minibuffer-completion-help
-    (intern (concat ":" (completing-read "Choose a style template:" org-writer-style-files nil t)))))
+    (completing-read "Choose a style template:" org-writer-styles nil t)))
 
 (defun org-writer-current-dir-setupfile-path ()
   (file-name-concat default-directory org-writer-setupfile-name))
@@ -149,7 +149,7 @@ parent."
 	 (style (org-writer-get-style style-name))
 	 (style-dest-path (org-writer-style-destination-path style project-dir))
 	 (h (org-writer-style-ignore-headlines-max-level style))
-	 (header-string (format "#+SETUPFILE: %s\n#+ODT_STYLES_FILE: %s\n#+BIND: org-writer-ignore-headlines-max-level %d\n" setupfile style-dest-path h)))
+	 (header-string (format "#+SETUPFILE: %s\n#+ODT_STYLES_FILE: %s\n#+BIND: org-writer-headline-cutoff %d\n" setupfile style-dest-path h)))
     ;; possible issue: other behaviors triggered by opening new file?
     (save-excursion
       (beginning-of-buffer)
