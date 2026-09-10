@@ -164,7 +164,11 @@ parent."
 ;; All it really changes is that it adds special blocks to the list of containers that change the style
 
 (defun org-writer-special-block-style (special-block)
-  (org-element-property :type special-block))  
+  (let ((type (org-element-property :type special-block)))
+    (if (or (string= type "annotation")
+	    (string= type "textbox"))
+	'default
+      type)))
 
 (defun org-writer-paragraph-style (paragraph)
   "Get style based on environments the paragraph is in, including special blocks"

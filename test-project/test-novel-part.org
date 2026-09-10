@@ -1,6 +1,6 @@
 #+SETUPFILE: ~/projects/org-writer/test-project/org-writer-setupfile.org
 #+ODT_STYLES_FILE: ~/projects/org-writer/test-project/org-writer-style-novel-chapter.ott
-#+BIND: org-writer-ignore-headlines-max-level 1
+#+BIND: org-writer-headline-cutoff 1
 * Chapter 1
 ** Scene 1
 First scene first paragraph; followed by explicit break. Sed id ligula quis est convallis tempor.  Lorem ipsum dolor sit amet, consectetuer adipiscing elit.  Donec hendrerit tempor tellus.  Donec pretium posuere tellus.  Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus.  Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.  Nulla posuere.  Donec vitae dolor.  Nullam tristique diam non turpis.  Cras placerat accumsan nulla.  Nullam rutrum.  Nam vestibulum accumsan nisl.
@@ -19,3 +19,7 @@ Nunc aliquet, augue nec adipiscing interdum, lacus tellus malesuada massa, quis 
 #+END_OrgPlanning
 
 
+** Scene 3
+#+BEGIN_textbox
+Scene 3 has a textbox; test that special block types already supported by org-odt aren't squashed by the new support for style blocks.
+#+END_textbox
