@@ -13,6 +13,8 @@
 ;; usage: use #+BIND: org-export-filter-parse-tree-functions (org-writer-ignore-headlines-below)
 ;; and set org-writer-headline-cutoff
 
+;; TODO: look into converting the hidden headlines into bookmarks instead!
+
 (defun org-writer-ignore-headlines-below (data backend info)
   "Remove below a certain level retaining contents.
 Each headline will be removed retaining its
@@ -33,6 +35,11 @@ parent."
 		info nil)))
   data)
 
+(defun org-writer-odt-linebreak (&optional bookmark-name)
+  (if bookmark-name
+      (format "<text:bookmark text:name=\"%s\"/>" bookmark-name)
+    ""))
+
 (defun headline-to-linebreak (obj &optional backend)
   (let* ((b (org-element-property :begin obj))
          (e (org-element-property :end obj))
@@ -45,7 +52,8 @@ parent."
     (setq break (cond ((org-export-derived-backend-p backend 'latex)
 					   `(latex-fragment (:value "\\bigskip" :begin ,b :end ,e :post-blank ,pb)))
                       ((org-export-derived-backend-p backend 'odt)
-                       "")
+                       (let ((title (org-element-property :title obj)))
+			 (org-writer-odt-linebreak title)))
 		      ((org-export-derived-backend-p backend 'html)
 		       " ")
                       (t
@@ -59,7 +67,9 @@ parent."
 ;; However, removing the headline in the buffer gets rid of :noexport: functionality, which we want
 ;; \nbsp version (not working with latex): (setq break `(entity (:name nbsp :latex "~" :latex-math-p nil :html "&nbsp;" :ascii " " :latin1 " " :utf-8 " " :use-brackets-p nil :begin ,b :end ,e)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initializing new projects and files
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst org-writer-package-dir (file-name-directory load-file-name))
 (defconst org-writer-setupfile-name "org-writer-setupfile.org")
