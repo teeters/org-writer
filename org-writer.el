@@ -18,7 +18,6 @@
 Each headline will be removed retaining its
 contents and promoting them to the level of the
 parent."
-  (message "data: %s" data)
   (let ((max-level org-writer-headline-cutoff))
 	(when max-level
       (org-element-map data 'headline
@@ -104,7 +103,6 @@ parent."
   "Copy default style file to project-dir/style-file-name if not exists; else do nothing"
   (let ((style-file-source (file-name-concat org-writer-package-dir style-file-name))
 	(style-file-dest (file-name-concat dest-dir style-file-name)))
-    (message "Copying style file from %s to %s" style-file-source style-file-dest)
     (unless (file-exists-p style-file-dest)
       (copy-file style-file-source style-file-dest))))
   
@@ -154,5 +152,48 @@ parent."
     (save-excursion
       (beginning-of-buffer)
       (insert header-string))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; special blocks for ODT styles
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; note: also tried advising the org-odt-special-block function
+;; didn't work well because the contents of the block are already parsed; would need to
+;; replace the style-name in all child paragraphs
+;; Instead, this code overrides the processing of paragraphs for the odt backend
+;; All it really changes is that it adds special blocks to the list of containers that change the style
+
+(defun org-writer-special-block-style (special-block)
+  (org-element-property :type special-block))  
+
+(defun org-writer-paragraph-style (paragraph)
+  "Get style based on environments the paragraph is in, including special blocks"
+  (let* ((nearest-styling-ancestor
+	  (org-element-lineage
+             paragraph
+             '(special-block center-block quote-block section))))
+  (cl-case (org-element-type nearest-styling-ancestor)
+    (center-block 'center)
+    (quote-block 'quoted)
+    (special-block (org-writer-special-block-style nearest-styling-ancestor)))))
+
+(defun org-writer-format-paragraph (paragraph contents info default center quote)
+  (let ((style (org-writer-paragraph-style paragraph)))
+    (format "\n<text:p text:style-name=\"%s\">%s</text:p>"
+	    (cond
+	     ((eq style 'quoted) quote)
+	     ((eq style 'centered) center)
+	     ((stringp style) style)
+	     (t default))
+	    ;; If PARAGRAPH is a leading paragraph in an item that has
+	    ;; a checkbox, splice checkbox and paragraph contents
+	    ;; together.
+	    (concat (let ((parent (org-element-parent paragraph)))
+		      (and (org-element-type-p parent 'item)
+			   (not (org-export-get-previous-element paragraph info))
+			   (org-odt--checkbox parent)))
+		    contents))))
+
+(advice-add 'org-odt--format-paragraph :override #'org-writer-format-paragraph)
 
 (provide 'org-writer)
