@@ -35,11 +35,6 @@ parent."
 		info nil)))
   data)
 
-(defun org-writer-odt-linebreak (&optional bookmark-name)
-  (if bookmark-name
-      (format "\n@@odt:<text:bookmark text:name=\"%s\"/>@@" bookmark-name)
-    ""))
-
 (defun org-writer-odt-bookmark-linebreak (bookmark-name backend begin end post-blank)
   "Create empty bookmark to insert in place of headline"
   (let ((value (format "\n<text:bookmark text:name=\"%s\"/>" bookmark-name)))
@@ -64,7 +59,7 @@ parent."
 					   `(latex-fragment (:value "\\bigskip" :begin ,b :end ,e :post-blank ,pb)))
                       ((org-export-derived-backend-p backend 'odt)
                        (let ((title (org-element-property :title obj)))
-			 (org-writer-odt-bookmark-linebreak title backend b e pb)))
+			 (org-writer-odt-bookmark-linebreak (org-element-interpret-data title) backend b e pb)))
 		      ((org-export-derived-backend-p backend 'html)
 		       " ")
                       (t
