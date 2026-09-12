@@ -19,7 +19,7 @@ Nunc aliquet, augue nec adipiscing interdum, lacus tellus malesuada massa, quis 
 #+END_OrgPlanning
 
 
-** Scene 3
+** Scene 3 (forbidden chars/things in title?)
 #+BEGIN_textbox
 Scene 3 has a textbox; test that special block types already supported by org-odt aren't squashed by the new support for style blocks.
 #+END_textbox

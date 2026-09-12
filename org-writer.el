@@ -40,7 +40,8 @@ parent."
 
 (defun org-writer-odt-bookmark-linebreak (bookmark-name backend begin end post-blank)
   "Create empty bookmark to insert in place of headline"
-  (let ((value (format "\n<text:bookmark text:name=\"%s\"/>" bookmark-name)))
+  (let* ((name (replace-regexp-in-string "[/\\@\*\?\",#]" " " bookmark-name))
+	 (value (format "\n<text:bookmark text:name=\"%s\"/>" name)))
     (org-element-create
    'export-snippet
    (list :back-end "odt"
@@ -63,6 +64,7 @@ parent."
                       ((org-export-derived-backend-p backend 'odt)
                        (if org-writer-headlines-to-bookmarks
 			   (let ((title (org-element-property :title obj)))
+			     (message "writing bookmark with title: %s" (org-element-interpret-data title))
 			     (org-writer-odt-bookmark-linebreak (org-element-interpret-data title) backend b e pb))
 			 " "))
 		      ((org-export-derived-backend-p backend 'html)
