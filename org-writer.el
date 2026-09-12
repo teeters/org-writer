@@ -1,4 +1,7 @@
 ;;; org-writer.el --- Utilities for using org-mode as a word processor, esp. for prose & novels
+
+;; Copyright (C) 2026 Samuel Teeter
+
 ;;; Code:
 
 (defgroup org-writer nil
@@ -8,12 +11,12 @@
 
 (setq org-export-allow-bind-keywords t) ;;TODO: prompt the user about this 
 
-(defcustom org-writer-headline-cutoff 2 "Max level of headlines to keep when exporting prose. Headlines at a greater depth will be treated as scene headers and replaced with a blank line in export")
+(defcustom org-writer-headline-cutoff 2 "Max level of headlines to keep when exporting prose. Headlines at a greater depth will be treated as scene headers and replaced with a blank line in export" :type 'integer)
+
+(defcustom org-writer-headlines-to-bookmarks t "If T, insert bookmarks for headlines that are ignored when exporting to ODT. (Headlines that are not ignored will receive bookmarks anyway, per org's default behavior)." :type 'boolean)
 
 ;; usage: use #+BIND: org-export-filter-parse-tree-functions (org-writer-ignore-headlines-below)
 ;; and set org-writer-headline-cutoff
-
-;; TODO: look into converting the hidden headlines into bookmarks instead!
 
 (defun org-writer-ignore-headlines-below (data backend info)
   "Remove below a certain level retaining contents.
@@ -58,8 +61,10 @@ parent."
     (setq break (cond ((org-export-derived-backend-p backend 'latex)
 					   `(latex-fragment (:value "\\bigskip" :begin ,b :end ,e :post-blank ,pb)))
                       ((org-export-derived-backend-p backend 'odt)
-                       (let ((title (org-element-property :title obj)))
-			 (org-writer-odt-bookmark-linebreak (org-element-interpret-data title) backend b e pb)))
+                       (if org-writer-headlines-to-bookmarks
+			   (let ((title (org-element-property :title obj)))
+			     (org-writer-odt-bookmark-linebreak (org-element-interpret-data title) backend b e pb))
+			 " "))
 		      ((org-export-derived-backend-p backend 'html)
 		       " ")
                       (t
