@@ -40,7 +40,7 @@ parent."
 
 (defun org-writer-odt-bookmark-linebreak (bookmark-name backend begin end post-blank)
   "Create empty bookmark to insert in place of headline"
-  (let* ((name (replace-regexp-in-string "[/\\@\*\?\",#]" " " bookmark-name))
+  (let* ((name (replace-regexp-in-string "[/\\@\*\?\",#&]" "" bookmark-name))
 	 (value (format "\n<text:bookmark text:name=\"%s\"/>" name)))
     (org-element-create
    'export-snippet
@@ -64,7 +64,6 @@ parent."
                       ((org-export-derived-backend-p backend 'odt)
                        (if org-writer-headlines-to-bookmarks
 			   (let ((title (org-element-property :title obj)))
-			     (message "writing bookmark with title: %s" (org-element-interpret-data title))
 			     (org-writer-odt-bookmark-linebreak (org-element-interpret-data title) backend b e pb))
 			 " "))
 		      ((org-export-derived-backend-p backend 'html)
@@ -222,5 +221,35 @@ parent."
 		    contents))))
 
 (advice-add 'org-odt--format-paragraph :override #'org-writer-format-paragraph)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; converting to/from double linebreaks. WIP
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun replace-many (pairs start end)
+  "For buffer from START to END, replace the first thing in each of PAIRS with the second thing"
+  (let ((target (concat "\\(?:" (mapconcat #'car pairs "\\|") "\\)")))
+    (save-restriction
+      (narrow-to-region start end)
+      (save-excursion
+        (goto-char (point-min))
+	(while (re-search-forward target nil t)
+	  (let ((pair (assoc (match-string 0) pairs)))
+	    (when pair
+	      (replace-match (cdr pair)))))))))
+
+(defconst org-writer-nbsp "\\\\nbsp")
+
+(defun org-writer-convert-to-org-spacing ()
+    (interactive)
+  (org-with-wide-buffer
+   (let ((ast (org-element-parse-buffer 'element)))
+     (org-element-map ast 'paragraph
+       (lambda (para)
+	 (let* ((contents-begin (org-element-property :contents-begin para))
+		(contents-end (org-element-property :contents-end para))
+		(pairs `(("\n\n" . ,(format "\n%s\n\n" org-writer-nbsp)) ("\n"."\n\n"))))
+           (when (and contents-begin contents-end)
+             (replace-many pairs contents-begin contents-end))))))))
 
 (provide 'org-writer)
